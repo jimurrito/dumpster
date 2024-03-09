@@ -15,10 +15,12 @@ function Get-ProcDump {
         expand-archive Procdump.zip -ErrorAction Stop -Force
     }
     catch {
-        throw ("An error occurred while downloading Procdump: {0}" -f $_)
+        Write-Error ("An error occurred while downloading Procdump: {0}" -f $_)
+        return $false
     }
     finally {
         Write-Host ("Download and extraction of Procdump was successful.")
+        $true
     }
     
 }
@@ -49,8 +51,24 @@ function Confirm-TargetProcState {
 }
 
 function Get-TargetProcState {
-    "Valid service states for Procdump.`n`n$ValidStateList"
+    return $ValidStateList
 }
+
+function Get-ProcPID {
+    param (
+        $ProcName = $1
+    )
+    Get-CimInstance -Class Win32_Service -Filter "Name LIKE '$ProcName'" | Select-Object -ExpandProperty ProcessId
+}
+
+function Get-ProcExe {
+    param (
+        $ProcPid = $1
+    )
+    # Get proc info
+    (Get-Process -Id $ProcPid).Name    
+}
+
 
 function Start-ProcDump {
     <#
@@ -58,24 +76,62 @@ function Start-ProcDump {
     Takes a single procdump of a named service
     #>
     param (
-        [string]$ServiceName,    
+        [string]$ServiceName,
+        [string]$ServicePID,
+        [string]$ServiceExec,
         [string]$TargetStatus = "StopPending"
     )
 
-    # Resolve PID from name
-    $srvc_pid = Get-CimInstance -Class Win32_Service -Filter "Name LIKE '$srvc_name'" | Select-Object -ExpandProperty ProcessId
-    # Resolve the executable that is linked to the PID
-    $srvc_path = (Get-Process -Id $srvc_pid).Path | Split-Path -Leaf
-    
     # Try and take the dump
     try {
-        write-host ("Taking Procdump for [{0}:{1}]." -f $srvc_name , $srvc_pid)
-        .\procdump.exe -s 5 -n 3 -ma $srvc_pid -accepteula ("{0}-{1}_{2}.dmp" -f "$srvc_name", "$srvc_path", (Get-Date -Format "yyyyMMdd_HHmmss"))
+        write-host ("Taking Procdump for [{0}:{1}]." -f $ServiceName , $ServicePID)
+        .\procdump.exe -s 5 -n 3 -ma $ServicePID -accepteula ("{0}-{1}_{2}.dmp" -f "$ServiceName", "$ServiceExec", (Get-Date -Format "yyyyMMdd_HHmmss"))
     }
     catch {
-        throw ("Running procdump for [{0}:{1}] failed with the following reason: {2}" -f $srvc_name , $srvc_pid, $_)
+        Write-Error ("Running procdump for [{0}:{1}] failed with the following reason: {2}" -f $ServiceName , $ServicePID, $_)
+        return $false
     }
-    finally{
-        Write-Host "Procdump for [{0}:{1}] done."
+    finally {
+        Write-Host ("Procdump for [{0}:{1}] done." -f $ServiceName , $ServicePID)
+        $true
     }
+}
+
+function Stop-Procs {
+    <#
+    .Description
+    Kill processes by PID
+    #>
+    param (
+        $ServiceName,
+        $ServicePID        
+    )
+    try {
+        write-host ("Killing process [{0}:{1}]." -f $ServiceName , $ServicePID )
+        taskkill /PID $ServicePID  /t /f
+    }
+    catch {
+        Write-Host ("Killing process [{0}:{1}] failed for the following reason: {2}." -f $ServiceName , $ServicePID , $_)
+    }
+    
+}
+
+function Clear-House {
+    <#
+    .Description
+    Properly off-boards the script in the event of an early return.
+    #>
+    param (
+        $LocalDir=$1,
+        $EnableLogging=$2       
+    )
+    # revert back a dir when done - if not local .exe
+    if (!$LocalDir) {
+        Set-Location ..
+    }
+    # Disable logging
+    if ($EnableLogging) {
+        Stop-Transcript
+    }
+    exit
 }
