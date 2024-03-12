@@ -1,6 +1,47 @@
 <#
-.Description
+.Synopsis
 Takes bulk Procdump(s) of services in a given state.
+
+.Description
+Based on the specified target process status, services will have memory dumps taken via Procdump.
+Optionally, the services can be killed once the dumps are taken. This very likely can lead to OS instability, so use with caution.
+Memory dumps generates will be placed in the current dirtory, unless specificied otherwise.
+
+.Parameter TargetStatus
+Desired status for target services.
+Options:
+- Stopped
+- Running
+- Paused
+- StartPending
+- StopPending
+- ContinuePending
+- PausePending
+
+.Parameter EnableLogging
+Runs a Powershell transcript while the script runs. Recomended for debugging only. (Disabled by default)
+
+.Parameter OutputDir
+Target directory for the memory dumps. (Defaults to Current path.)
+
+.Parameter ProcKill
+Kills the processes once **ALL** the per-process memory dumps are taken.
+
+.Example
+Take procdump(s) on all services with the `StopPending` state.
+PS> bulkProcdump.ps1 -TargetStatus StopPending
+
+.Example
+Take procdump(s) on all services with the `StopPending` state. When done, kill the processes.
+PS> bulkProcdump.ps1 -TargetStatus StopPending -ProcKill
+
+.Example
+Take procdump(s) on all services with the `StopPending` state. Runs Transcript of the script run.
+PS> bulkProcdump.ps1 -TargetStatus StopPending -EnableLogging
+
+.Link
+https://github.com/jasmir/dumpster
+
 #>
 
 # ensure shell is elevated
