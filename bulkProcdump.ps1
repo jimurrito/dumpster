@@ -7,8 +7,11 @@ Based on the specified target process status, services will have memory dumps ta
 Optionally, the services can be killed once the dumps are taken. This very likely can lead to OS instability, so use with caution.
 Memory dumps generates will be placed in the current dirtory, unless specificied otherwise.
 
+Made by: jamesimmer@microsoft.com
+
 .Parameter TargetStatus
 Desired status for target services.
+
 Options:
 - Stopped
 - Running
@@ -28,16 +31,16 @@ Target directory for the memory dumps. (Defaults to Current path.)
 Kills the processes once **ALL** the per-process memory dumps are taken.
 
 .Example
-Take procdump(s) on all services with the `StopPending` state.
 PS> bulkProcdump.ps1 -TargetStatus StopPending
+Take procdump(s) on all services with the `StopPending` state.
 
 .Example
-Take procdump(s) on all services with the `StopPending` state. When done, kill the processes.
 PS> bulkProcdump.ps1 -TargetStatus StopPending -ProcKill
+Take procdump(s) on all services with the `StopPending` state. When done, kill the processes.
 
 .Example
-Take procdump(s) on all services with the `StopPending` state. Runs Transcript of the script run.
 PS> bulkProcdump.ps1 -TargetStatus StopPending -EnableLogging
+Take procdump(s) on all services with the `StopPending` state. Runs Transcript of the script run.
 
 .Link
 https://github.com/jasmir/dumpster
