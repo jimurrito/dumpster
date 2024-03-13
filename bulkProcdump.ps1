@@ -146,7 +146,7 @@ foreach ($ServiceName in $Services) {
 
 # Take procdump(s)
 $ServiceLs | ForEach-Object {
-    Start-ProcDump -ServiceName $_.item1 -ServicePID $_.item2 -ServiceExec $_.item3 -TargetStatus $TargetStatus
+    Start-ProcDump -ServiceName $_.item1 -ServicePID $_.item2 -ServiceExec $_.item3 -TargetStatus $TargetStatus -OutputDir $OutputDir
 }
 
 

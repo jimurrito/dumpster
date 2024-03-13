@@ -45,30 +45,6 @@ function Get-ProcExe {
 }
 
 
-function Start-ProcDump {
-    <#
-    .Description
-    Takes a single procdump of a named service
-    #>
-    param (
-        [string]$ServiceName,
-        [string]$ServicePID,
-        [string]$ServiceExec,
-        [string]$TargetStatus = "StopPending"
-    )
-
-    # Try and take the dump
-    try {
-        write-host ("Taking Procdump for [{0}:{1}]." -f $ServiceName , $ServicePID)
-        .\procdump.exe -s 5 -n 3 -ma $ServicePID -accepteula ("{0}-{1}_{2}.dmp" -f "$ServiceName", "$ServiceExec", (Get-Date -Format "yyyyMMdd_HHmmss"))
-    }
-    catch {
-        throw ("Running procdump for [{0}:{1}] failed with the following reason: {2}" -f $ServiceName , $ServicePID, $_)
-    }
-    finally {
-        Write-Host ("Procdump for [{0}:{1}] done." -f $ServiceName , $ServicePID)
-    }
-}
 
 
 function Stop-Procs {
