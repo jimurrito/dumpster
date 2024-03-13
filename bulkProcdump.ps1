@@ -66,6 +66,7 @@ param (
 
 # Import lib
 Import-Module -name "$PSScriptRoot\lib\procdump.psm1"
+Import-Module -name "$PSScriptRoot\lib\prochandlers.psm1"
 
 
 # Enable logging if requested
@@ -73,10 +74,9 @@ if ($EnableLogging) {
     Start-Transcript -Path ("{0}\bulkProcdump_{1}.log" -f $OutputDir, (Get-Date -Format "yyyyMMdd_HHmmss"))
 }
 
-#" " -eq $TargetStatus
 
-# Ensure $targetstate is not $null
-if ($null -eq $TargetStatus) {
+# Ensure $targetstatus is not $null
+if (!($TargetStatus)) {
     Write-Error "The -TargetStatus parameter is required. Valid states: ($List)"
     Clear-House $true $EnableLogging
 }
@@ -133,21 +133,30 @@ else {
 }
 
 
-
-
-# Take procdump(s) + Kill services (opt)
+# Get proc info
+$ServiceLs = @()
+Write-Host "Gathering Information on [${TargetStatus}] services."
 foreach ($ServiceName in $Services) {
-    # Resolve PID from name
     $ServicePID = Get-ProcPID -ProcName $ServiceName
-    # Resolve the executable that is linked to the PID
     $ServiceExec = Get-ProcExe -ProcPid $ServicePID
-    # take dump
-    Start-ProcDump -ServiceName $Service -ServicePID $ServicePID -ServiceExec $ServiceExec -TargetStatus $TargetStatus
-    # Kill processes if not skipped - procs are NOT killed by default
-    if ($ProcKill) {
-        Stop-Procs -ServiceName $Service -ServicePID $ServicePID
-    }
+    $ServiceLs += [System.Tuple]::Create($ServiceName, $ServicePID, $ServiceExec)
 }
+# $ServiceLs is now a list of tuples. Item1 == Name, Item2 == PID, Item3 == executable
+
+
+# Take procdump(s)
+$ServiceLs | ForEach-Object {
+    Start-ProcDump -ServiceName $_.item1 -ServicePID $_.item2 -ServiceExec $_.item3 -TargetStatus $TargetStatus
+}
+
+
+# Kill Processes if requested
+if ($ProcKill) {
+    $ServiceLs | ForEach-Object {
+        Stop-Procs -ServiceName $_.item1 -ServicePID $_.item2
+    } 
+}
+
 
 # Off board script
 Clear-House $LocalDir $EnableLogging
